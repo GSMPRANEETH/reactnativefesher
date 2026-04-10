@@ -15,7 +15,11 @@ const initialState: CategoriesState = {
   error: null,
 };
 
-export const loadCategories = createAsyncThunk(
+export const loadCategories = createAsyncThunk<
+  CategoryInfo[],
+  void,
+  { rejectValue: string }
+>(
   'categories/load',
   async (_, thunkApi) => {
     try {
@@ -48,7 +52,7 @@ const categoriesSlice = createSlice({
       .addCase(loadCategories.rejected, (state, action) => {
         state.status = 'failed';
         state.error =
-          (action.payload as string | undefined) ??
+          action.payload ??
           action.error.message ??
           'Could not load categories.';
       });

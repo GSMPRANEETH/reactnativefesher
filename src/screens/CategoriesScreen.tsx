@@ -14,10 +14,7 @@ import {
   loadCategories,
   selectCategories,
 } from '../store/categoriesSlice';
-import {
-  fetchCatalogPage,
-  setCatalogQuery,
-} from '../store/catalogSlice';
+import { setCatalogQuery } from '../store/catalogSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import type { RootStackParamList } from '../navigation/types';
 import type { CategoryInfo } from '../api/categoriesApi';
@@ -41,14 +38,7 @@ export function CategoriesScreen() {
   const handleSelectCategory = useCallback(
     (category: CategoryInfo) => {
       dispatch(setCatalogQuery(category.slug));
-      dispatch(
-        fetchCatalogPage({
-          query: category.slug,
-          page: 1,
-          replace: true,
-        }),
-      );
-      navigation.navigate('Catalog');
+      navigation.goBack();
     },
     [dispatch, navigation],
   );

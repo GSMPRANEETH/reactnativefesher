@@ -33,6 +33,12 @@ export function ProductListScreen() {
   const hasMore = useAppSelector(selectCatalogHasMore);
   const [searchText, setSearchText] = useState(catalog.query);
 
+  // Keep the text input in sync when catalog.query is updated from outside
+  // this screen (e.g. via the Categories screen).
+  useEffect(() => {
+    setSearchText(catalog.query);
+  }, [catalog.query]);
+
   useEffect(() => {
     if (!catalog.hydrated) {
       return;
