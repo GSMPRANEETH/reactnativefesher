@@ -111,7 +111,15 @@ export function ProductListScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headerBlock}>
-        <Text style={styles.title}>Product Catalog</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>Product Catalog</Text>
+          <Pressable
+            style={styles.categoriesButton}
+            onPress={() => navigation.navigate('Categories')}
+          >
+            <Text style={styles.categoriesLabel}>Categories</Text>
+          </Pressable>
+        </View>
         <TextInput
           value={searchText}
           onChangeText={setSearchText}
@@ -191,10 +199,26 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 10,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   title: {
     fontSize: 26,
     fontWeight: '800',
     color: '#1A1A1A',
+  },
+  categoriesButton: {
+    backgroundColor: '#0D6A57',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  categoriesLabel: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 13,
   },
   searchInput: {
     marginTop: 10,
