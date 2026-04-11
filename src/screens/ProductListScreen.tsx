@@ -33,6 +33,30 @@ export function ProductListScreen() {
   const hasMore = useAppSelector(selectCatalogHasMore);
   const [searchText, setSearchText] = useState(catalog.query);
 
+  const runSearch = (nextQuery: string) => {
+    const normalized = nextQuery.trim();
+
+    setSearchText(nextQuery);
+    dispatch(setCatalogQuery(normalized));
+    dispatch(
+      fetchCatalogPage({
+        query: normalized,
+        page: 1,
+        replace: true,
+      }),
+    );
+  };
+
+  const retryCurrentQuery = () => {
+    dispatch(
+      fetchCatalogPage({
+        query: catalog.query,
+        page: 1,
+        replace: true,
+      }),
+    );
+  };
+
   useEffect(() => {
     if (!catalog.hydrated) {
       return;
@@ -112,6 +136,10 @@ export function ProductListScreen() {
     <View style={styles.container}>
       <View style={styles.headerBlock}>
         <Text style={styles.title}>Product Catalog</Text>
+        <Text style={styles.subtitle}>
+          Search a large catalog, load more as you scroll, and keep state after
+          you reopen the app.
+        </Text>
         <TextInput
           value={searchText}
           onChangeText={setSearchText}
@@ -122,7 +150,15 @@ export function ProductListScreen() {
         />
       </View>
 
-      {catalog.error ? <Text style={styles.error}>{catalog.error}</Text> : null}
+      {catalog.error ? (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorTitle}>Could not load products</Text>
+          <Text style={styles.errorBody}>{catalog.error}</Text>
+          <Pressable style={styles.errorButton} onPress={retryCurrentQuery}>
+            <Text style={styles.errorButtonText}>Try again</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <FlatList
         data={products}
@@ -131,13 +167,34 @@ export function ProductListScreen() {
           styles.content,
           products.length === 0 && styles.emptyContent,
         ]}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         onEndReached={loadMore}
-        onEndReachedThreshold={0.6}
+        onEndReachedThreshold={0.45}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        updateCellsBatchingPeriod={50}
+        windowSize={5}
+        removeClippedSubviews
         refreshControl={
           <RefreshControl
             refreshing={catalog.status === 'refreshing'}
             onRefresh={refresh}
           />
+        }
+        ListHeaderComponent={
+          catalog.query || products.length > 0 ? (
+            <View style={styles.summaryBlock}>
+              <Text style={styles.summaryTitle}>
+                {catalog.query ? 'Filtered results' : 'Catalog overview'}
+              </Text>
+              <Text style={styles.summaryBody}>
+                {catalog.query
+                  ? `Showing ${products.length} products for “${catalog.query}”.`
+                  : `Showing ${products.length} of ${catalog.total} products.`}
+              </Text>
+            </View>
+          ) : null
         }
         renderItem={({ item }) => (
           <Pressable
@@ -163,9 +220,38 @@ export function ProductListScreen() {
             <View style={styles.centered}>
               <ActivityIndicator size="large" color="#0D6A57" />
             </View>
+          ) : catalog.status === 'failed' ? (
+            <View style={styles.centered}>
+              <Text style={styles.emptyTitle}>Something went wrong</Text>
+              <Text style={styles.emptyBody}>
+                Check your connection and try again.
+              </Text>
+              <Pressable style={styles.retryButton} onPress={retryCurrentQuery}>
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </Pressable>
+            </View>
+          ) : catalog.query ? (
+            <View style={styles.centered}>
+              <Text style={styles.emptyTitle}>No matches found</Text>
+              <Text style={styles.emptyBody}>
+                Try a different search term or clear the filter.
+              </Text>
+              <Pressable
+                style={styles.retryButton}
+                onPress={() => runSearch('')}
+              >
+                <Text style={styles.retryButtonText}>Clear search</Text>
+              </Pressable>
+            </View>
           ) : (
             <View style={styles.centered}>
-              <Text>No products found.</Text>
+              <Text style={styles.emptyTitle}>No products available</Text>
+              <Text style={styles.emptyBody}>
+                Pull to refresh or try again later.
+              </Text>
+              <Pressable style={styles.retryButton} onPress={retryCurrentQuery}>
+                <Text style={styles.retryButtonText}>Reload</Text>
+              </Pressable>
             </View>
           )
         }
@@ -173,6 +259,7 @@ export function ProductListScreen() {
           catalog.status === 'loadingMore' ? (
             <View style={styles.footer}>
               <ActivityIndicator color="#0D6A57" />
+              <Text style={styles.footerText}>Loading more products</Text>
             </View>
           ) : null
         }
@@ -196,6 +283,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1A1A1A',
   },
+  subtitle: {
+    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#665A4F',
+  },
   searchInput: {
     marginTop: 10,
     borderWidth: 1,
@@ -206,16 +299,63 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
   },
-  error: {
-    color: '#B42318',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+  errorBanner: {
+    marginHorizontal: 16,
+    marginBottom: 10,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: '#FFF4F3',
+    borderWidth: 1,
+    borderColor: '#FEC0BA',
+  },
+  errorTitle: {
+    color: '#8B1D18',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  errorBody: {
+    marginTop: 6,
+    color: '#7A2C27',
     fontSize: 13,
-    fontWeight: '600',
+    lineHeight: 18,
+  },
+  errorButton: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: '#8B1D18',
+  },
+  errorButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
   },
   content: {
     paddingHorizontal: 16,
     paddingBottom: 18,
+  },
+  summaryBlock: {
+    marginBottom: 12,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: '#FFF8EF',
+    borderWidth: 1,
+    borderColor: '#E8D8C1',
+  },
+  summaryTitle: {
+    fontSize: 13,
+    color: '#0D6A57',
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  summaryBody: {
+    marginTop: 6,
+    color: '#51473D',
+    fontSize: 13,
+    lineHeight: 18,
   },
   emptyContent: {
     flexGrow: 1,
@@ -254,9 +394,41 @@ const styles = StyleSheet.create({
     minHeight: 220,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    color: '#1A1A1A',
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  emptyBody: {
+    marginTop: 8,
+    color: '#665A4F',
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: '#0D6A57',
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 13,
   },
   footer: {
     alignItems: 'center',
     paddingVertical: 14,
+  },
+  footerText: {
+    marginTop: 6,
+    color: '#665A4F',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

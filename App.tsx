@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   StatusBar,
   StyleSheet,
+  Text,
   useColorScheme,
   View,
 } from 'react-native';
@@ -50,6 +51,7 @@ function AppShell() {
     return (
       <View style={styles.bootContainer}>
         <ActivityIndicator size="large" color="#0D6A57" />
+        <Text style={styles.bootText}>Restoring your catalog</Text>
       </View>
     );
   }
@@ -85,5 +87,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F6F3EE',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  bootText: {
+    marginTop: 12,
+    color: '#665A4F',
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

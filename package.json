@@ -3,13 +3,15 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "android": "react-native run-android",
+    "android": "react-native run-android --port 8081",
     "ios": "react-native run-ios",
     "lint": "eslint .",
-    "start": "react-native start"
+    "start": "react-native start --port 8081",
+    "doctor": "react-native doctor",
+    "clean:android": "cd android && gradlew.bat clean"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^3.0.2",
+    "@react-native-async-storage/async-storage": "^2.1.2",
     "@react-navigation/native": "^7.2.2",
     "@react-navigation/native-stack": "^7.14.10",
     "@reduxjs/toolkit": "^2.11.2",

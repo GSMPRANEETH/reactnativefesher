@@ -1,4 +1,9 @@
-import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import {
+  createAsyncThunk,
+  createSelector,
+  createSlice,
+  PayloadAction,
+} from '@reduxjs/toolkit';
 
 import { fetchProducts } from '../api/productsApi';
 import type { Product } from '../types/product';
@@ -21,9 +26,11 @@ const initialState: CatalogState = {
 
 function mergeIds(current: number[], incoming: Product[]) {
   const next = [...current];
+  const seen = new Set(current);
 
   for (const product of incoming) {
-    if (!next.includes(product.id)) {
+    if (!seen.has(product.id)) {
+      seen.add(product.id);
       next.push(product.id);
     }
   }
@@ -97,6 +104,7 @@ const catalogSlice = createSlice({
       }
 
       state.query = next;
+      state.selectedProductId = null;
       state.ids = [];
       state.entities = {};
       state.page = 0;
@@ -129,8 +137,16 @@ const catalogSlice = createSlice({
         const items = action.payload.products;
 
         if (action.meta.arg.replace) {
+          const retainedProduct =
+            state.selectedProductId !== null
+              ? state.entities[state.selectedProductId]
+              : undefined;
+
           state.ids = items.map(item => item.id);
-          state.entities = mergeEntities({}, items);
+          state.entities = mergeEntities(
+            retainedProduct ? { [retainedProduct.id]: retainedProduct } : {},
+            items,
+          );
         } else {
           state.ids = mergeIds(state.ids, items);
           state.entities = mergeEntities(state.entities, items);
@@ -161,22 +177,40 @@ export const { hydrateCatalogState, setCatalogQuery, selectProductId } =
 
 export const selectCatalog = (state: { catalog: CatalogState }) =>
   state.catalog;
+const selectCatalogIds = (state: { catalog: CatalogState }) =>
+  state.catalog.ids;
+const selectCatalogEntities = (state: { catalog: CatalogState }) =>
+  state.catalog.entities;
+const selectSelectedProductId = (state: { catalog: CatalogState }) =>
+  state.catalog.selectedProductId;
+const selectCatalogTotal = (state: { catalog: CatalogState }) =>
+  state.catalog.total;
 export const selectCatalogHydrated = (state: { catalog: CatalogState }) =>
   state.catalog.hydrated;
-export const selectCatalogHasMore = (state: { catalog: CatalogState }) =>
-  state.catalog.ids.length < state.catalog.total;
-export const selectVisibleProducts = (state: { catalog: CatalogState }) =>
-  state.catalog.ids
-    .map(id => state.catalog.entities[id])
-    .filter((item): item is Product => Boolean(item));
-export const selectSelectedProduct = (state: { catalog: CatalogState }) => {
-  const selectedId = state.catalog.selectedProductId;
+export const selectCatalogHasMore = createSelector(
+  [selectCatalogIds, selectCatalogTotal],
+  (ids, total) => ids.length < total,
+);
+export const selectVisibleProducts = createSelector(
+  [selectCatalogIds, selectCatalogEntities],
+  (ids, entities) =>
+    ids
+      .map(id => entities[id])
+      .filter((item): item is Product => Boolean(item)),
+);
+export const selectSelectedProduct = createSelector(
+  [selectSelectedProductId, selectCatalogEntities],
+  (selectedId, entities) => {
+    if (selectedId === null) {
+      return null;
+    }
 
-  if (selectedId === null) {
-    return null;
-  }
-
-  return state.catalog.entities[selectedId] ?? null;
-};
+    return entities[selectedId] ?? null;
+  },
+);
+export const selectProductById = (
+  state: { catalog: CatalogState },
+  productId: number,
+) => state.catalog.entities[productId] ?? null;
 
 export default catalogSlice.reducer;
